@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Para Alondra ❤️</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #050505;
+      color: #ffffff;
+      font-family: 'Fira Code', monospace;
+      min-height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    /* Scanline effect */
+    .scanline {
+      width: 100%;
+      height: 100px;
+      z-index: 10;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0) 100%);
+      opacity: 0.15;
+      position: absolute;
+      bottom: 100%;
+      pointer-events: none;
+      animation: scanline 10s linear infinite;
+    }
+
+    @keyframes scanline {
+      0% { bottom: 100%; }
+      100% { bottom: -100px; }
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background-color: #ff4d6d;
+      margin-left: 6px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      from, to { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    .glow-text {
+      text-shadow: 0 0 10px rgba(255, 77, 109, 0.6), 0 0 25px rgba(255, 77, 109, 0.3);
+    }
+
+    /* Screen 1: Console */
+    #console-view {
+      width: 100%;
+      max-width: 650px;
+      padding: 2rem;
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.85);
+      z-index: 5;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    #console-view.hidden {
+      opacity: 0;
+      transform: scale(1.05);
+      pointer-events: none;
+      display: none;
+    }
+
+    .line {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      align-items: center;
+    }
+
+    .tag-system {
+      color: rgba(255, 143, 177, 0.7);
+    }
+
+    .tag-status {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .status-ready {
+      color: #4ade80;
+      font-weight: 600;
+      display: none;
+    }
+
+    .action-container {
+      margin-top: 2rem;
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.25rem;
+    }
+
+    .action-container.visible {
+      display: flex;
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hint-text {
+      color: rgba(255, 255, 255, 0.4);
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .decrypt-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1.75rem;
+      border: 1px solid rgba(255, 77, 109, 0.4);
+      background: rgba(255, 77, 109, 0.07);
+      color: #ff8fb1;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .decrypt-btn:hover {
+      background: rgba(255, 77, 109, 0.18);
+      border-color: #ff4d6d;
+      box-shadow: 0 0 15px rgba(255, 77, 109, 0.25);
+    }
+
+    .decrypt-btn svg {
+      transition: transform 0.3s ease;
+    }
+
+    .decrypt-btn:hover svg {
+      transform: rotate(12deg);
+    }
+
+    .subtle-hint {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.25);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Screen 2: Reveal */
+    #reveal-view {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+
+    #reveal-view.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #heart-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .center-content {
+      position: relative;
+      z-index: 20;
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 1.5s ease 2s, transform 1.5s ease 2s;
+    }
+
+    .center-content.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .title-decrypted {
+      color: #ff4d6d;
+      font-family: 'Fira Code', monospace;
+      font-size: 1.4rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .sub-dedication {
+      color: #ff8fb1;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.8rem;
+      text-shadow: 0 0 12px rgba(255, 143, 177, 0.4);
+    }
+
+    .divider {
+      width: 50px;
+      height: 1px;
+      background: rgba(255, 77, 109, 0.4);
+      margin: 0 auto 1.5rem auto;
+    }
+
+    .reencrypt-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.25);
+      font-family: 'Fira Code', monospace;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      padding: 0.5rem 1rem;
+    }
+
+    .reencrypt-btn:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .corner-meta {
+      position: absolute;
+      font-size: 0.65rem;
+      font-family: 'Fira Code', monospace;
+      color: rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      z-index: 2;
+    }
+
+    .top-left {
+      top: 2rem;
+      left: 2rem;
+      line-height: 1.6;
+    }
+
+    .bottom-right {
+      bottom: 2rem;
+      right: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+
+  <!-- Vista Consola -->
+  <div id="console-view">
+    <div class="line">
+      <span class="tag-system">[system]</span>
+      <span id="typewriter-text"></span>
+    </div>
+    <div class="line" style="min-height: 1.5rem;">
+      <span class="tag-status">[status]</span>
+      <span id="status-ready" class="status-ready">READY</span>
+    </div>
+
+    <div id="action-container" class="action-container">
+      <p class="hint-text">&gt; One encrypted package found for Alondra.</p>
+      <button id="decrypt-btn" class="decrypt-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Decrypt Message</span>
+        <span class="terminal-cursor"></span>
+      </button>
+      <p class="subtle-hint">(or just click anywhere)</p>
+    </div>
+  </div>
+
+  <!-- Vista Revelación (Corazón) -->
+  <div id="reveal-view">
+    <canvas id="heart-canvas"></canvas>
+
+    <div id="center-content" class="center-content">
+      <h2 class="title-decrypted glow-text">Decrypted</h2>
+      <p class="sub-dedication">Para Alondra ❤️</p>
+      <div class="divider"></div>
+      <button id="reencrypt-btn" class="reencrypt-btn">Re-encrypt</button>
+    </div>
+
+    <div class="corner-meta top-left">
+      <div>ln: 420</div>
+      <div>id: 0xDEADBEEF</div>
+      <div>recipient: alondra</div>
+    </div>
+
+    <div class="corner-meta bottom-right">
+      heart_reveal // success
+    </div>
+  </div>
+
+  <script>
+    // Elementos del DOM
+    const consoleView = document.getElementById('console-view');
+    const typewriterText = document.getElementById('typewriter-text');
+    const statusReady = document.getElementById('status-ready');
+    const actionContainer = document.getElementById('action-container');
+    const decryptBtn = document.getElementById('decrypt-btn');
+    const revealView = document.getElementById('reveal-view');
+    const centerContent = document.getElementById('center-content');
+    const reencryptBtn = document.getElementById('reencrypt-btn');
+    const canvas = document.getElementById('heart-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let isConsoleFinished = false;
+    let isRevealStage = false;
+    let animationFrameId = null;
+    let points = [];
+    const heartText = "te amo alondra";
+    const fontSize = 13;
+
+    // Efecto Typewriter
+    const fullText = "Initializing alondra.PROTOCOL_v2.0...";
+    let charIndex = 0;
+
+    function runTypewriter() {
+      charIndex = 0;
+      typewriterText.textContent = "";
+      statusReady.style.display = "none";
+      actionContainer.classList.remove('visible');
+      isConsoleFinished = false;
+
+      function typeChar() {
+        if (charIndex < fullText.length) {
+          typewriterText.textContent += fullText[charIndex];
+          charIndex++;
+          setTimeout(typeChar, 35);
+        } else {
+          isConsoleFinished = true;
+          statusReady.style.display = "inline";
+          actionContainer.classList.add('visible');
+        }
+      }
+      typeChar();
+    }
+
+    // Inicializar puntos del corazón
+    function initPoints() {
+      points = [];
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const scale = Math.min(canvas.width, canvas.height) / 45;
+
+      // Ecuación paramétrica de corazón:
+      // x = 16 sin^3(t)
+      // y = -(13 cos(t) - 5 cos(2t) - 2 cos(3t) - cos(4t))
+      for (let t = 0; t < Math.PI * 2; t += 0.05) {
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+        points.push({
+          x: centerX + x * scale,
+          y: centerY + y * scale,
+          alpha: 0,
+          targetAlpha: 0.85 + Math.random() * 0.15,
+          delay: Math.random() * 2000
+        });
+      }
+
+      // Capas internas
+      for (let s = 0.2; s < 1; s += 0.2) {
+        for (let t = 0; t < Math.PI * 2; t += 0.1) {
+          const x = 16 * Math.pow(Math.sin(t), 3);
+          const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+          points.push({
+            x: centerX + x * scale * s,
+            y: centerY + y * scale * s,
+            alpha: 0,
+            targetAlpha: 0.45 + Math.random() * 0.35,
+            delay: Math.random() * 3000
+          });
+        }
+      }
+    }
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (isRevealStage) {
+        initPoints();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let animStart = null;
+    function drawHeart(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `${fontSize}px "Fira Code", monospace`;
+
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        if (elapsed > p.delay) {
+          p.alpha += (p.targetAlpha - p.alpha) * 0.02;
+        }
+        ctx.fillStyle = `rgba(255, 77, 109, ${p.alpha})`;
+        ctx.fillText(heartText, p.x - ctx.measureText(heartText).width / 2, p.y);
+      }
+
+      if (isRevealStage) {
+        animationFrameId = requestAnimationFrame(drawHeart);
+      }
+    }
+
+    function showReveal() {
+      if (isRevealStage) return;
+      isRevealStage = true;
+      consoleView.classList.add('hidden');
+      revealView.classList.add('visible');
+
+      initPoints();
+      animStart = null;
+      animationFrameId = requestAnimationFrame(drawHeart);
+
+      setTimeout(() => {
+        centerContent.classList.add('show');
+      }, 500);
+    }
+
+    function showConsole() {
+      isRevealStage = false;
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      centerContent.classList.remove('show');
+      revealView.classList.remove('visible');
+      consoleView.classList.remove('hidden');
+      runTypewriter();
+    }
+
+    // Eventos
+    decryptBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showReveal();
+    });
+
+    document.body.addEventListener('click', () => {
+      if (!isRevealStage && isConsoleFinished) {
+        showReveal();
+      }
+    });
+
+    reencryptBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showConsole();
+    });
+
+    // Iniciar
+    runTypewriter();
+  </script>
+</body>
+</html>
